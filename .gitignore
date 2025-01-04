@@ -1,0 +1,27 @@
+# Node.js modules
+node_modules/
+
+# Tệp cấu hình của IDE
+.idea/
+.vscode/
+
+# Log files
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Tệp cấu hình của hệ điều hành (Mac OS)
+.DS_Store
+
+# Các tệp tạm của hệ thống (Windows)
+Thumbs.db
+
+# Tệp môi trường
+.env
+
+# Các tệp build của ứng dụng (nếu có)
+dist/
+build/
+
+# Các tệp khác như coverage từ các công cụ test
+coverage/
