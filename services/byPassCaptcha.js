@@ -4,6 +4,7 @@ const TwoCaptcha = require("../libs/TwoCaptcha");
 class ByPassCaptcha {
 	puzzleId = null;
 	puzzleImage = null;
+	answer = null;
 
 	constructor(appId) {
 		this.appId = appId;
@@ -15,6 +16,10 @@ class ByPassCaptcha {
 
 	getPuzzleImage() {
 		return this.puzzleImage;
+	}
+
+	getAnswer() {
+		return this.answer;
 	}
 
 	async #getPuzzleAsync() {
@@ -67,8 +72,24 @@ class ByPassCaptcha {
 
 	async #solveCaptchaAsync() {
 		try {
+			let isReady = false;
+
 			const twoCaptcha = new TwoCaptcha();
-			await twoCaptcha.solveCaptcha(this.puzzleImage);
+			const balance = await twoCaptcha.getBalanceAsync();
+			console.log("balance: ", balance);
+			const solved = await twoCaptcha.solveCaptcha(this.puzzleImage);
+
+			console.log(solved.status);
+
+			while (!isReady) {
+				const result = await twoCaptcha.getCaptchaResultAsync();
+
+				if (result?.errorId === 0 && result?.status === "ready") {
+					this.answer = result.solution.text;
+					console.log("answer: ", this.answer);
+					isReady = true;
+				}
+			}
 		} catch (error) {
 			console.error("solveCaptchaAsync::", error.message);
 		}
