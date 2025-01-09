@@ -1,9 +1,12 @@
+const axios = require('axios')
+const { HttpsProxyAgent } = require("https-proxy-agent");
+
 class TwoCaptcha {
 	#BASE_URL = process.env.TWO_CAPTCHA_API_URL;
 	taskId = null;
 
 	constructor(proxy) {
-		this.proxy = proxy;
+		this.agent = new HttpsProxyAgent(proxy);
 	}
 
 	getTaskId() {
@@ -12,34 +15,31 @@ class TwoCaptcha {
 
 	async solveCaptcha(base64) {
 		try {
-			const res = await fetch(this.#BASE_URL.concat("/createTask"), {
-				method: "POST",
+			const res = await axios.post(this.#BASE_URL.concat("/createTask"), {
+				clientKey: process.env.TWO_CAPTCHA_KEY,
+				softId: 4706,
+				task: {
+					type: "ImageToTextTask",
+					body: base64,
+					phrase: false,
+					case: true,
+					numeric: 4,
+					math: false,
+					minLength: 6,
+					maxLength: 6,
+					comment: "enter the text you see on the image",
+				},
+			}, {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({
-					clientKey: process.env.TWO_CAPTCHA_KEY,
-					softId: 4706,
-					task: {
-						type: "ImageToTextTask",
-						body: base64,
-						phrase: false,
-						case: true,
-						numeric: 4,
-						math: false,
-						minLength: 6,
-						maxLength: 6,
-						comment: "enter the text you see on the image",
-					},
-				}),
-				// proxy: this.proxy,
+				httpAgent: this.agent,
+				httpsAgent: this.agent
 			});
 
-			const data = await res.json();
+			if (!res.data?.taskId) throw new Error("Couldn't find captcha");
 
-			if (!data?.taskId) throw new Error("Couldn't find captcha");
-
-			this.taskId = data.taskId;
+			this.taskId = res.data.taskId;
 
 			return await this.getCaptchaResultAsync();
 		} catch (error) {
@@ -49,21 +49,19 @@ class TwoCaptcha {
 
 	async getCaptchaResultAsync() {
 		try {
-			const res = await fetch(this.#BASE_URL.concat("/getTaskResult"), {
+			const res = await axios.post(this.#BASE_URL.concat("/getTaskResult"),{
+				clientKey: process.env.TWO_CAPTCHA_KEY,
+				taskId: this.taskId,
+			}, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({
-					clientKey: process.env.TWO_CAPTCHA_KEY,
-					taskId: this.taskId,
-				}),
-				// proxy: this.proxy,
+				httpAgent: this.agent,
+				httpsAgent: this.agent
 			});
 
-			const data = await res.json();
-
-			return data;
+			return res.data;
 		} catch (error) {
 			console.error("Error getting captcha result:", error);
 		}
@@ -71,20 +69,19 @@ class TwoCaptcha {
 
 	async getBalanceAsync() {
 		try {
-			const res = await fetch(this.#BASE_URL.concat("/getBalance"), {
+			const twoCaptchaKey = process.env.TWO_CAPTCHA_KEY
+			const res = await axios.post(this.#BASE_URL.concat("/getBalance"),{
+				clientKey: twoCaptchaKey,
+			}, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({
-					clientKey: process.env.TWO_CAPTCHA_KEY,
-				}),
-				// proxy: this.proxy,
+				httpAgent: this.agent,
+				httpsAgent: this.agent
 			});
 
-			const data = await res.json();
-
-			return data;
+			return res.data;
 		} catch (error) {
 			console.error("Error getting balance:", error);
 		}
