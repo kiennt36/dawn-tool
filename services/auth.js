@@ -87,6 +87,62 @@ class Auth {
       console.error("registerAsync::", error.message);
     }
   }
+
+  async getPointAsync(email, token) {
+    console.log(`Account::${email}::${this.proxy}::Start get point...`)
+    try {
+      const res = await axios.get(API_URL.getPoint.replace("{app_id}", this.appId), {
+        headers: {
+          "Authorization": "Berear".concat(" ", token),
+          "User-Agent":
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Content-Type": "application/json",
+        },
+        httpAgent: this.agent,
+				httpsAgent: this.agent,
+        timeout: 30000
+      })
+
+      if(!res.data?.data) {
+        console.error(`Account::${email}::Get point fail!`)
+        console.error(res.data)
+        return;
+      }
+
+      const points = {
+        commission: res.data?.data?.referralPoint?.commission ?? 0,
+        points: res.data?.data?.rewardPoint?.points ?? 0,
+        registerpoints: res.data?.data?.rewardPoint?.registerpoints ?? 0,
+        signinpoints: res.data?.data?.rewardPoint?.signinpoints ?? 0,
+        twitter_x_id_points: res.data?.data?.rewardPoint?.twitter_x_id_points ?? 0,
+        discordid_points: res.data?.data?.rewardPoint?.discordid_points ?? 0,
+        telegramid_points: res.data?.data?.rewardPoint?.telegramid_points ?? 0,
+        bonus_points: res.data?.data?.rewardPoint?.bonus_points ?? 0,
+        epoch01: res.data?.data?.rewardPoint?.epoch01 ?? 0,
+      }
+
+      const totalPoints = Object.values(points).reduce((total, currentPoint) => {
+        return total += currentPoint
+      }, 0)
+
+      console.log(`Account::${email}::get point success!`)
+      return {
+        status: 200,
+        email: res.data?.data?.rewardPoint?.userId ?? email,
+        points,
+        totalPoints
+      }
+    } catch (error) {
+      console.error(`Account::${email}::Get point error!`)
+      console.error("getPointAsync::", error?.response?.status);
+      return {
+        status: error?.response?.status,
+        email: email,
+        points: null,
+        totalPoints: null
+      }
+    }
+  }
 }
 
 module.exports = Auth;
